@@ -1,15 +1,15 @@
 project:
   name: "Bookstore Application"
-  description: "Aplikasi toko buku online berbasis Node.js dan PostgreSQL dengan sistem login, cart, wishlist, dan dashboard admin."
+  description: "Aplikasi toko buku online berbasis Node.js dan PostgreSQL dengan sistem login, cart, wishlist, dan profil pengguna."
 
 features:
   - Autentikasi pengguna (register, login, logout)
-  - CRUD data buku (khusus admin)
+  - Melihat daftar buku
   - Keranjang belanja (cart)
   - Wishlist (daftar keinginan)
   - Profil pengguna
   - Upload gambar untuk buku dan profil
-  - Proteksi akses (hanya user login yang dapat mengakses fitur tertentu)
+  - Proteksi akses (login required)
   - UI minimalis dan konsisten menggunakan favicon icons
 
 technologies:
@@ -26,18 +26,34 @@ prerequisites:
 
 installation:
   steps:
-    - step: "Clone Repository"
+    - step: "1. Instal Node.js dan npm"
+      instructions: |
+        Unduh Node.js dari https://nodejs.org/ (pilih LTS version).
+        Setelah selesai, periksa instalasi dengan:
+          node -v
+          npm -v
+
+    - step: "2. Clone Repository"
       commands:
-        - git clone <repository-url>
-        - cd bookstore-app
-    - step: "Install Dependencies"
+        - git clone https://github.com/Akiraa-cat/paas-bookstore.git
+        - cd paas-bookstore
+
+    - step: "3. Install Dependencies"
       commands:
         - npm install
-    - step: "Setup Database di Railway"
-      instructions:
-        - Buat PostgreSQL baru di Railway
-        - Salin connection string (postgresql://user:password@host:port/database)
-        - Jalankan SQL schema berikut:
+
+    - step: "4. Setup Database PostgreSQL di Railway"
+      instructions: |
+        1. Masuk ke https://railway.app
+        2. Buat proyek baru dan tambahkan PostgreSQL Plugin
+        3. Setelah dibuat, buka tab Variables → salin connection string seperti:
+           postgresql://user:password@host:port/database
+        4. Buka terminal proyek dan buat file `.env` berisi:
+
+          DATABASE_URL=postgresql://user:password@host:port/database
+          PORT=3000
+
+        5. Jalankan SQL schema berikut di Railway:
       sql_schema: |
         CREATE TABLE users (
           id SERIAL PRIMARY KEY,
@@ -71,23 +87,18 @@ installation:
           book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-    - step: "Konfigurasi Environment Variables"
-      file: ".env"
-      content: |
-        DATABASE_URL=postgresql://user:password@host:port/database
-        PORT=3000
-    - step: "Jalankan Aplikasi"
+
+    - step: "5. Jalankan Aplikasi"
       commands:
         - npm start
         - npm run dev
-      url: "http://localhost:3000"
+      access_url: "http://localhost:3000"
 
 folder_structure: |
   bookstore-app/
   ├── views/
   │   ├── index.html
   │   ├── books.html
-  │   ├── add_book.html
   │   ├── cart.html
   │   ├── wishlist.html
   │   ├── login.html
@@ -109,10 +120,6 @@ usage:
     - Jelajahi daftar buku di /books
     - Tambahkan buku ke cart atau wishlist
     - Lihat dan ubah profil di /profile
-  admin_flow:
-    - Login sebagai admin
-    - Tambah, edit, dan hapus buku
-    - Mengelola data di halaman admin (CRUD)
 
 api_endpoints:
   authentication:
@@ -125,9 +132,6 @@ api_endpoints:
   books:
     - GET /api/books : ambil semua buku
     - GET /api/books/:id : ambil detail buku
-    - POST /api/books : tambah buku (admin only)
-    - PUT /api/books/:id : update buku (admin only)
-    - DELETE /api/books/:id : hapus buku (admin only)
   cart:
     - GET /api/cart : lihat isi cart
     - POST /api/cart : tambah ke cart
@@ -143,8 +147,6 @@ access_control:
     - /cart
     - /wishlist
     - /profile
-  - Hanya admin yang dapat:
-    - Tambah, edit, hapus buku (CRUD)
   - User biasa hanya dapat:
     - Melihat buku
     - Menambah ke cart/wishlist
@@ -162,7 +164,7 @@ deployment:
     steps:
       - Hubungkan repository GitHub ke Railway
       - Tambahkan variabel lingkungan DATABASE_URL dan PORT
-      - Deploy secara otomatis setelah push ke branch utama
+      - Deploy otomatis setelah push ke branch utama
   optional:
     - Gunakan storage eksternal untuk gambar (Cloudinary atau AWS S3)
     - Tambahkan custom domain jika diperlukan
@@ -200,4 +202,4 @@ contributing: "Pull requests diterima. Buka issue terlebih dahulu untuk perubaha
 
 author:
   name: "Akiwaa"
-  note: "Dibuat untuk pembelajaran dan pengembangan aplikasi CRUD dengan Node.js dan PostgreSQL."
+  note: "Dibuat untuk pembelajaran dan pengembangan aplikasi CRUD sederhana dengan Node.js dan PostgreSQL."
