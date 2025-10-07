@@ -1,8 +1,8 @@
 import http from 'http';
 import url from 'url';
 import fs from 'fs';
-import path from 'path';
 import { fileURLToPath } from 'url';
+import path from 'path';
 import dotenv from 'dotenv';
 import * as db from './db.js';
 
@@ -182,7 +182,7 @@ const server = http.createServer(async (req, res) => {
     }
     
     if (htmlFile) {
-      const filePath = path.join(__dirname, 'views', htmlFile);
+      const filePath = path.join(__dirname, 'public', htmlFile);
       return serveStaticFile(res, filePath);
     }
   }
