@@ -1,0 +1,28 @@
+{
+  "name": "bookstore-marketplace",
+  "version": "1.0.0",
+  "description": "Simple bookstore marketplace with Node.js and PostgreSQL",
+  "type": "module",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js",
+    "init-db": "node init_db.js"
+  },
+  "keywords": [
+    "bookstore",
+    "marketplace",
+    "nodejs",
+    "postgresql"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {}
+}

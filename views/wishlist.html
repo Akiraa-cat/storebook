@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wishlist - Bookstore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  
+  <!-- Navigation -->
+  <nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center space-x-8">
+          <a href="/" class="text-xl font-semibold text-gray-900">Bookstore</a>
+          <div class="hidden md:flex space-x-6">
+            <a href="/" class="text-gray-600 hover:text-gray-900 transition-colors">Home</a>
+            <a href="/books" class="text-gray-600 hover:text-gray-900 transition-colors">Books</a>
+            <a href="/wishlist" class="text-gray-700 hover:text-gray-900 transition-colors">Wishlist</a>
+            <a href="/cart" class="text-gray-600 hover:text-gray-900 transition-colors">Cart</a>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <a href="/profile" class="text-gray-600 hover:text-gray-900 transition-colors">Profile</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">My Wishlist</h1>
+      <p class="text-gray-600 mt-2">Books you've saved for later</p>
+    </div>
+
+    <div id="wishlistItems" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Wishlist items will be loaded here -->
+      <div class="text-center text-gray-500 py-12 col-span-full">
+        Loading wishlist...
+      </div>
+    </div>
+  </main>
+
+  <script>
+
+    // Check authentication
+    async function checkAuthOrRedirect() {
+      try {
+        const response = await fetch('/api/profile');
+        if (!response.ok) {
+          window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+          return false;
+        }
+        return true;
+      } catch (error) {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return false;
+      }
+    }
+
+    // Call before loading wishlist
+    checkAuthOrRedirect().then(authenticated => {
+      if (authenticated) {
+        loadWishlist();
+      }
+    });
+    async function loadWishlist() {
+      try {
+        const response = await fetch('/api/wishlist');
+        const wishlistItems = await response.json();
+        
+        const container = document.getElementById('wishlistItems');
+        
+        if (wishlistItems.length === 0) {
+          container.innerHTML = `
+            <div class="col-span-full">
+              <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+                <div class="text-6xl mb-4">♡</div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Your wishlist is empty</h3>
+                <p class="text-gray-600 mb-6">Start adding books you love</p>
+                <a href="/books" class="inline-block bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors">
+                  Browse Books
+                </a>
+              </div>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = wishlistItems.map(item => `
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow" data-item-id="${item.id}">
+            <div class="relative">
+              <div class="aspect-[3/4] bg-gray-100 flex items-center justify-center">
+                ${item.book.image ? 
+                  `<img src="${item.book.image}" alt="${item.book.title}" class="w-full h-full object-cover">` :
+                  `<span class="text-4xl text-gray-300">📚</span>`
+                }
+              </div>
+              <button onclick="removeFromWishlist(${item.id})" class="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm hover:bg-red-50 transition-colors group">
+                <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="p-4">
+              <h3 class="font-medium text-gray-900 mb-1 truncate">${item.book.title}</h3>
+              <p class="text-sm text-gray-600 mb-2">${item.book.author}</p>
+              <p class="text-lg font-semibold text-gray-900 mb-3">Rp ${parseFloat(item.book.price).toLocaleString('id-ID')}</p>
+              <button onclick="addToCart(${item.book.id})" class="w-full bg-gray-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors">
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading wishlist:', error);
+        document.getElementById('wishlistItems').innerHTML = 
+          '<div class="text-center text-red-600 py-12 col-span-full">Failed to load wishlist</div>';
+      }
+    }
+    
+    async function removeFromWishlist(itemId) {
+      const result = await Swal.fire({
+        title: 'Remove from Wishlist?',
+        text: 'Remove this item from your wishlist?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, remove it'
+      });
+      
+      if (result.isConfirmed) {
+        try {
+          const response = await fetch(`/api/wishlist/${itemId}`, {
+            method: 'DELETE'
+          });
+          
+          if (response.ok) {
+            await Swal.fire({
+              icon: 'success',
+              title: 'Removed!',
+              text: 'Item has been removed from wishlist',
+              timer: 1500,
+              showConfirmButton: false
+            });
+            loadWishlist();
+          }
+        } catch (error) {
+          console.error('Error removing from wishlist:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to remove item from wishlist'
+          });
+        }
+      }
+    }
+
+    async function addToCart(bookId) {
+      try {
+        const response = await fetch('/api/cart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ book_id: bookId, quantity: 1 })
+        });
+        
+        if (response.ok) {
+          await Swal.fire({
+            icon: 'success',
+            title: 'Added to Cart!',
+            text: 'Book has been added to your cart',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        }
+      } catch (error) {
+        console.error('Error adding to cart:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to add to cart'
+        });
+      }
+    }
+        
+  </script>
+</body>
+</html>

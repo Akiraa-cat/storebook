@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookstore - Home</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  
+  <!-- Navigation -->
+  <nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center space-x-8">
+          <a href="/" class="text-xl font-semibold text-gray-900">Bookstore</a>
+          <div class="hidden md:flex space-x-6">
+            <a href="/" class="text-gray-700 hover:text-gray-900 transition-colors">Home</a>
+            <a href="/books" class="text-gray-600 hover:text-gray-900 transition-colors">Books</a>
+            <a href="/wishlist" class="text-gray-600 hover:text-gray-900 transition-colors">Wishlist</a>
+            <a href="/cart" class="text-gray-600 hover:text-gray-900 transition-colors">Cart</a>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4" id="navAuth">
+          <!-- Will be populated by JS -->
+          <a href="/login" class="text-gray-600 hover:text-gray-900 transition-colors">Login</a>
+          <a href="/register" class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">Register</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="bg-gradient-to-b from-gray-100 to-white py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          Discover Your Next Great Read
+        </h1>
+        <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+          Browse through our collection of books and find your perfect match
+        </p>
+        <a href="/books" class="inline-block bg-gray-800 text-white px-8 py-3 rounded-lg hover:bg-gray-700 transition-colors">
+          Browse Books
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Books -->
+  <section class="py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-8">Featured Books</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="featured-books">
+        <!-- Books will be loaded here -->
+        <div class="text-center text-gray-500 py-12 col-span-full">
+          Loading books...
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-gray-200 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="text-center text-gray-500 text-sm">
+        <p>&copy; 2025 Bookstore. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Load featured books
+    async function loadFeaturedBooks() {
+      try {
+        const response = await fetch('/api/books?limit=4');
+        const books = await response.json();
+        
+        const container = document.getElementById('featured-books');
+        
+        if (books.length === 0) {
+          container.innerHTML = '<div class="text-center text-gray-500 py-12 col-span-full">No books available yet</div>';
+          return;
+        }
+        
+        container.innerHTML = books.map(book => `
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 group">
+            <div class="relative aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+              ${book.image ? 
+                `<img src="${book.image}" alt="${book.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">` :
+                `<div class="w-full h-full flex items-center justify-center">
+                  <svg class="w-24 h-24 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                  </svg>
+                </div>`
+              }
+              <div class="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-semibold text-gray-900 shadow-md">
+                Rp ${parseFloat(book.price).toLocaleString('id-ID')}
+              </div>
+            </div>
+            <div class="p-5">
+              <h3 class="font-semibold text-gray-900 mb-1 truncate text-lg">${book.title}</h3>
+              <p class="text-sm text-gray-600 mb-4">${book.author}</p>
+              <div class="flex gap-2">
+                <button class="flex-1 bg-gray-900 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                  </svg>
+                  Add to Cart
+                </button>
+                <button class="bg-red-50 text-red-600 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading books:', error);
+        document.getElementById('featured-books').innerHTML = 
+          '<div class="text-center text-gray-500 py-12 col-span-full">Failed to load books</div>';
+      }
+    }
+
+    // Check authentication status
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/profile');
+        if (response.ok) {
+          const user = await response.json();
+          document.getElementById('navAuth').innerHTML = `
+            <span class="text-gray-600">Hello, ${user.name}</span>
+            <a href="/profile" class="text-gray-600 hover:text-gray-900 transition-colors">Profile</a>
+            <button onclick="logout()" class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">Logout</button>
+          `;
+        }
+      } catch (error) {
+        // User not logged in, keep default
+      }
+    }
+
+    async function logout() {
+      try {
+        await fetch('/api/logout', { method: 'POST' });
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Error logging out:', error);
+      }
+    }
+
+    checkAuth();
+    loadFeaturedBooks();
+  </script>
+</body>
+</html>

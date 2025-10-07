@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart - Bookstore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  
+  <!-- Navigation -->
+  <nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center space-x-8">
+          <a href="/" class="text-xl font-semibold text-gray-900">Bookstore</a>
+          <div class="hidden md:flex space-x-6">
+            <a href="/" class="text-gray-600 hover:text-gray-900 transition-colors">Home</a>
+            <a href="/books" class="text-gray-600 hover:text-gray-900 transition-colors">Books</a>
+            <a href="/wishlist" class="text-gray-600 hover:text-gray-900 transition-colors">Wishlist</a>
+            <a href="/cart" class="text-gray-700 hover:text-gray-900 transition-colors">Cart</a>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <a href="/profile" class="text-gray-600 hover:text-gray-900 transition-colors">Profile</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Cart Items -->
+      <div class="lg:col-span-2">
+        <div id="cartItems" class="space-y-4">
+          <!-- Cart items will be loaded here -->
+          <div class="text-center text-gray-500 py-12">
+            Loading cart...
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-4">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
+          
+          <div class="space-y-3 mb-6">
+            <div class="flex justify-between text-gray-600">
+              <span>Items (<span id="itemCount">0</span>)</span>
+              <span id="subtotal">Rp 0</span>
+            </div>
+            <div class="flex justify-between text-gray-600">
+              <span>Shipping</span>
+              <span>Free</span>
+            </div>
+            <div class="border-t border-gray-200 pt-3 flex justify-between text-lg font-semibold text-gray-900">
+              <span>Total</span>
+              <span id="total">Rp 0</span>
+            </div>
+          </div>
+
+          <button onclick="proceedToCheckout()" class="w-full bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium">
+            Proceed to Checkout
+          </button>
+          
+          <a href="/books" class="block text-center text-gray-600 hover:text-gray-900 transition-colors mt-4">
+            Continue Shopping
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Check authentication
+    async function checkAuthOrRedirect() {
+      try {
+        const response = await fetch('/api/profile');
+        if (!response.ok) {
+          window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+          return false;
+        }
+        return true;
+      } catch (error) {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return false;
+      }
+    }
+
+    // Call before loading cart
+    checkAuthOrRedirect().then(authenticated => {
+      if (authenticated) {
+        loadCart();
+      }
+    });
+    async function loadCart() {
+      try {
+        const response = await fetch('/api/cart');
+        const cartItems = await response.json();
+        
+        const container = document.getElementById('cartItems');
+        
+        if (cartItems.length === 0) {
+          container.innerHTML = `
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+              <div class="text-6xl mb-4">🛒</div>
+              <h3 class="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h3>
+              <p class="text-gray-600 mb-6">Add some books to get started</p>
+              <a href="/books" class="inline-block bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors">
+                Browse Books
+              </a>
+            </div>
+          `;
+          updateSummary(cartItems);
+          return;
+        }
+        
+        container.innerHTML = cartItems.map(item => `
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex items-center space-x-4" data-item-id="${item.id}">
+            <div class="w-20 h-28 bg-gray-100 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
+              ${item.book.image ? 
+                `<img src="${item.book.image}" alt="${item.book.title}" class="w-full h-full object-cover">` :
+                `<span class="text-3xl text-gray-300">📚</span>`
+              }
+            </div>
+            
+            <div class="flex-1 min-w-0">
+              <h3 class="font-medium text-gray-900 mb-1">${item.book.title}</h3>
+              <p class="text-sm text-gray-600 mb-2">${item.book.author}</p>
+              <p class="text-lg font-semibold text-gray-900">Rp ${parseFloat(item.book.price).toLocaleString('id-ID')}</p>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+              <button onclick="updateQuantity(${item.id}, ${item.quantity - 1})" class="w-8 h-8 rounded border border-gray-300 hover:bg-gray-100 transition-colors flex items-center justify-center">
+                −
+              </button>
+              <span class="w-12 text-center font-medium">${item.quantity}</span>
+              <button onclick="updateQuantity(${item.id}, ${item.quantity + 1})" class="w-8 h-8 rounded border border-gray-300 hover:bg-gray-100 transition-colors flex items-center justify-center">
+                +
+              </button>
+            </div>
+            
+            <button onclick="removeFromCart(${item.id})" class="text-gray-400 hover:text-red-600 transition-colors p-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </button>
+          </div>
+        `).join('');
+        
+        updateSummary(cartItems);
+      } catch (error) {
+        console.error('Error loading cart:', error);
+        document.getElementById('cartItems').innerHTML = 
+          '<div class="text-center text-red-600 py-12">Failed to load cart</div>';
+      }
+    }
+
+    async function proceedToCheckout() {
+      try {
+        const response = await fetch('/api/cart');
+        const cartItems = await response.json();
+        
+        if (cartItems.length === 0) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Cart is Empty',
+            text: 'Please add items to cart first'
+          });
+          return;
+        }
+        
+        const total = cartItems.reduce((sum, item) => sum + (item.book.price * item.quantity), 0);
+        
+        const { value: paymentMethod } = await Swal.fire({
+          title: 'Choose Payment Method',
+          html: `
+            <div class="text-left space-y-4">
+              <p class="text-lg font-semibold mb-4">Total: Rp ${total.toLocaleString('id-ID')}</p>
+              <div class="space-y-2">
+                <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-400 transition-colors">
+                  <input type="radio" name="payment" value="credit_card" class="mr-3 w-4 h-4">
+                  <div>
+                    <div class="font-medium">💳 Credit/Debit Card</div>
+                    <div class="text-sm text-gray-500">Visa, Mastercard, JCB</div>
+                  </div>
+                </label>
+                <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-400 transition-colors">
+                  <input type="radio" name="payment" value="bank_transfer" class="mr-3 w-4 h-4">
+                  <div>
+                    <div class="font-medium">🏦 Bank Transfer</div>
+                    <div class="text-sm text-gray-500">BCA, Mandiri, BNI, BRI</div>
+                  </div>
+                </label>
+                <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-400 transition-colors">
+                  <input type="radio" name="payment" value="ewallet" class="mr-3 w-4 h-4">
+                  <div>
+                    <div class="font-medium">📱 E-Wallet</div>
+                    <div class="text-sm text-gray-500">GoPay, OVO, Dana, ShopeePay</div>
+                  </div>
+                </label>
+                <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-400 transition-colors">
+                  <input type="radio" name="payment" value="cod" class="mr-3 w-4 h-4">
+                  <div>
+                    <div class="font-medium">💵 Cash on Delivery</div>
+                    <div class="text-sm text-gray-500">Pay when you receive</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          `,
+          showCancelButton: true,
+          confirmButtonText: 'Continue',
+          cancelButtonText: 'Cancel',
+          confirmButtonColor: '#1f2937',
+          preConfirm: () => {
+            const selected = document.querySelector('input[name="payment"]:checked');
+            if (!selected) {
+              Swal.showValidationMessage('Please select a payment method');
+              return false;
+            }
+            return selected.value;
+          }
+        });
+        
+        if (paymentMethod) {
+          await processPayment(paymentMethod, total, cartItems);
+        }
+      } catch (error) {
+        console.error('Error during checkout:', error);
+      }
+    }
+
+    async function processPayment(method, total, items) {
+      // Simulate payment processing
+      await Swal.fire({
+        title: 'Processing Payment...',
+        html: '<div class="text-center"><div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div></div>',
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        timer: 2000
+      });
+      
+      const methodNames = {
+        credit_card: 'Credit/Debit Card',
+        bank_transfer: 'Bank Transfer',
+        ewallet: 'E-Wallet',
+        cod: 'Cash on Delivery'
+      };
+      
+      const result = await Swal.fire({
+        icon: 'success',
+        title: 'Payment Successful!',
+        html: `
+          <div class="text-left space-y-2 mt-4">
+            <p><strong>Payment Method:</strong> ${methodNames[method]}</p>
+            <p><strong>Total Paid:</strong> Rp ${total.toLocaleString('id-ID')}</p>
+            <p><strong>Items:</strong> ${items.length} item(s)</p>
+            <p class="text-sm text-gray-500 mt-4">Order confirmation has been sent to your email</p>
+          </div>
+        `,
+        confirmButtonText: 'View Order Details',
+        showCancelButton: true,
+        cancelButtonText: 'Continue Shopping',
+        confirmButtonColor: '#1f2937'
+      });
+      
+      if (result.isConfirmed) {
+        await showOrderDetails(method, total, items);
+      } else {
+        window.location.href = '/books';
+      }
+      
+      // Clear cart after successful payment
+      for (const item of items) {
+        await fetch(`/api/cart/${item.id}`, { method: 'DELETE' });
+      }
+      loadCart();
+    }
+
+    async function showOrderDetails(method, total, items) {
+      const orderNumber = 'ORD-' + Date.now();
+      const orderDate = new Date().toLocaleDateString('id-ID', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const methodNames = {
+        credit_card: 'Credit/Debit Card',
+        bank_transfer: 'Bank Transfer',
+        ewallet: 'E-Wallet',
+        cod: 'Cash on Delivery'
+      };
+      
+      const itemsList = items.map(item => `
+        <div class="flex justify-between py-2 border-b">
+          <div>
+            <div class="font-medium">${item.book.title}</div>
+            <div class="text-sm text-gray-500">${item.quantity}x Rp ${parseFloat(item.book.price).toLocaleString('id-ID')}</div>
+          </div>
+          <div class="font-medium">Rp ${(item.book.price * item.quantity).toLocaleString('id-ID')}</div>
+        </div>
+      `).join('');
+      
+      await Swal.fire({
+        title: 'Order Details',
+        html: `
+          <div class="text-left space-y-4">
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <p class="text-sm text-gray-500">Order Number</p>
+              <p class="font-bold text-lg">${orderNumber}</p>
+            </div>
+            
+            <div>
+              <p class="text-sm text-gray-500">Order Date</p>
+              <p class="font-medium">${orderDate}</p>
+            </div>
+            
+            <div>
+              <p class="text-sm text-gray-500 mb-2">Items Ordered</p>
+              ${itemsList}
+            </div>
+            
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <div class="flex justify-between mb-2">
+                <span>Subtotal</span>
+                <span>Rp ${total.toLocaleString('id-ID')}</span>
+              </div>
+              <div class="flex justify-between mb-2">
+                <span>Shipping</span>
+                <span class="text-green-600">FREE</span>
+              </div>
+              <div class="flex justify-between font-bold text-lg pt-2 border-t">
+                <span>Total</span>
+                <span>Rp ${total.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+            
+            <div>
+              <p class="text-sm text-gray-500">Payment Method</p>
+              <p class="font-medium">${methodNames[method]}</p>
+            </div>
+            
+            <div class="bg-green-50 border border-green-200 p-4 rounded-lg">
+              <p class="text-green-800 font-medium">✓ Payment Confirmed</p>
+              <p class="text-sm text-green-600 mt-1">Your order is being processed</p>
+            </div>
+          </div>
+        `,
+        width: 600,
+        confirmButtonText: 'Done',
+        confirmButtonColor: '#1f2937'
+      });
+      
+      window.location.href = '/books';
+    }
+    
+    function updateSummary(cartItems) {
+      const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+      const subtotal = cartItems.reduce((sum, item) => sum + (item.book.price * item.quantity), 0);
+      
+      document.getElementById('itemCount').textContent = itemCount;
+      document.getElementById('subtotal').textContent = `Rp ${subtotal.toLocaleString('id-ID')}`;
+      document.getElementById('total').textContent = `Rp ${subtotal.toLocaleString('id-ID')}`;
+    }
+    
+    async function updateQuantity(itemId, newQuantity) {
+      if (newQuantity < 1) {
+        removeFromCart(itemId);
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/cart/${itemId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quantity: newQuantity })
+        });
+        
+        if (response.ok) {
+          loadCart();
+        }
+      } catch (error) {
+        console.error('Error updating quantity:', error);
+      }
+    }
+    
+    async function removeFromCart(itemId) {
+      const result = await Swal.fire({
+        title: 'Remove Item?',
+        text: 'Remove this item from your cart?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, remove it'
+      });
+      
+      if (result.isConfirmed) {
+        try {
+          const response = await fetch(`/api/cart/${itemId}`, {
+            method: 'DELETE'
+          });
+          
+          if (response.ok) {
+            await Swal.fire({
+              icon: 'success',
+              title: 'Removed!',
+              text: 'Item has been removed from cart',
+              timer: 1500,
+              showConfirmButton: false
+            });
+            loadCart();
+          }
+        } catch (error) {
+          console.error('Error removing item:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to remove item from cart'
+          });
+        }
+      }
+    }
+    
+  </script>
+</body>
+</html>
